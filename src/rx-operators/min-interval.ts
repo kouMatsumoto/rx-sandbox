@@ -15,7 +15,7 @@ export const minInterval = (minimumProcessTime: number, scheduler = async) => {
       }),
       map((time) => ({
         data: time.value,
-        processTime: time.interval,
+        executionTime: time.interval,
         waitTime,
       })),
     );
