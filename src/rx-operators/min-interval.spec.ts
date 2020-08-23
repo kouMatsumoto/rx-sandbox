@@ -1,7 +1,7 @@
 import { TestScheduler } from 'rxjs/testing';
-import { minimumInterval } from './minimum-interval';
+import { minInterval } from './min-interval';
 
-describe('waitIfProcessTimeIsUnder', () => {
+describe('minInterval', () => {
   let scheduler: TestScheduler;
 
   beforeEach(() => {
@@ -14,13 +14,13 @@ describe('waitIfProcessTimeIsUnder', () => {
     scheduler.run((helpers) => {
       const { cold, expectObservable } = helpers;
 
-      const stream = cold('400ms (a|)', { a: 'value' });
+      const stream = cold('400ms (a|)');
       const expected = '1000ms (a|)';
 
-      expectObservable(stream.pipe(minimumInterval(1000, scheduler))).toBe(expected, {
+      expectObservable(stream.pipe(minInterval(1000, scheduler))).toBe(expected, {
         a: {
-          data: 'value',
-          processTime: 400,
+          data: 'a',
+          executionTime: 400,
           waitTime: 600,
         },
       });
@@ -31,13 +31,13 @@ describe('waitIfProcessTimeIsUnder', () => {
     scheduler.run((helpers) => {
       const { cold, expectObservable } = helpers;
 
-      const stream = cold('400ms (a|)', { a: 'value' });
+      const stream = cold('400ms (a|)');
       const expected = '400ms (a|)';
 
-      expectObservable(stream.pipe(minimumInterval(200, scheduler))).toBe(expected, {
+      expectObservable(stream.pipe(minInterval(200, scheduler))).toBe(expected, {
         a: {
-          data: 'value',
-          processTime: 400,
+          data: 'a',
+          executionTime: 400,
           waitTime: 0,
         },
       });
