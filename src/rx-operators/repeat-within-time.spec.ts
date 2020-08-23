@@ -1,8 +1,8 @@
 import { defer } from 'rxjs';
 import { TestScheduler } from 'rxjs/testing';
-import { repeatWithin } from './repeat-within';
+import { repeatWithinTime } from './repeat-within-time';
 
-describe('repeatWithin', () => {
+describe('repeatWithinTime', () => {
   const wait = (time: number) => new Promise((resolve) => setTimeout(() => resolve(), time));
   let scheduler: TestScheduler;
 
@@ -19,8 +19,8 @@ describe('repeatWithin', () => {
       const stream = cold('10ms (a|)');
       const expected = '10ms (b|)';
 
-      expectObservable(stream.pipe(repeatWithin(0, scheduler))).toBe(expected, {
-        b: { value: 'a', executionCount: 1 },
+      expectObservable(stream.pipe(repeatWithinTime(0, scheduler))).toBe(expected, {
+        b: { value: 'a', count: 1 },
       });
     });
   });
@@ -32,8 +32,8 @@ describe('repeatWithin', () => {
       const stream = cold('10ms (a|)');
       const expected = '10ms (b|)';
 
-      expectObservable(stream.pipe(repeatWithin(-100, scheduler))).toBe(expected, {
-        b: { value: 'a', executionCount: 1 },
+      expectObservable(stream.pipe(repeatWithinTime(-100, scheduler))).toBe(expected, {
+        b: { value: 'a', count: 1 },
       });
     });
   });
@@ -45,9 +45,9 @@ describe('repeatWithin', () => {
       const stream = cold('10ms (a|)');
       const expected = '10ms b 9ms (c|)';
 
-      expectObservable(stream.pipe(repeatWithin(20, scheduler))).toBe(expected, {
-        b: { value: 'a', executionCount: 1 },
-        c: { value: 'a', executionCount: 2 },
+      expectObservable(stream.pipe(repeatWithinTime(20, scheduler))).toBe(expected, {
+        b: { value: 'a', count: 1 },
+        c: { value: 'a', count: 2 },
       });
     });
   });
@@ -59,9 +59,9 @@ describe('repeatWithin', () => {
       const stream = cold('10ms (a|)');
       const expected = '10ms b 9ms (c|)';
 
-      expectObservable(stream.pipe(repeatWithin(15, scheduler))).toBe(expected, {
-        b: { value: 'a', executionCount: 1 },
-        c: { value: 'a', executionCount: 2 },
+      expectObservable(stream.pipe(repeatWithinTime(15, scheduler))).toBe(expected, {
+        b: { value: 'a', count: 1 },
+        c: { value: 'a', count: 2 },
       });
     });
   });
@@ -69,7 +69,7 @@ describe('repeatWithin', () => {
   // TODO: spy Observable.subscribe to check count
   test('should call source by expected count', async () => {
     const fn = jest.fn(() => wait(10));
-    defer(fn).pipe(repeatWithin(15)).subscribe();
+    defer(fn).pipe(repeatWithinTime(15)).subscribe();
 
     await wait(20);
     expect(fn).toBeCalledTimes(2);

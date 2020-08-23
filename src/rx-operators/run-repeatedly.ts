@@ -1,35 +1,27 @@
-import { async, defer, Observable, Subject, timer } from 'rxjs';
-import { map, repeat, takeUntil, tap } from 'rxjs/operators';
+import { async, defer, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ObservableInput } from 'rxjs/src/internal/types';
 import { minInterval } from './min-interval';
+import { repeatWithCount } from './repeat-with-count';
+import { repeatWithinTime } from './repeat-within-time';
 
-export const runRepeatedly = (minimumInterval: number, executionCount: number, minimumRuntime: number, scheduler = async) => {
-  return (source: Observable<any>) => {
-    let totalExecutionCount = 0;
-    let isUnderRuntime = true;
-    const runtimeOver = new Subject();
-    const conditionRuntimeOver = () => {
-      if (!isUnderRuntime) {
-        runtimeOver.next();
-        runtimeOver.complete();
-      }
-    };
+// either executionCount or minExecutionTime is required
+type Param =
+  | { minInterval?: number; executionCount: number; minExecutionTime?: never }
+  | { minInterval?: number; executionCount?: never; minExecutionTime: number };
 
-    timer(minimumRuntime, scheduler).subscribe(() => (isUnderRuntime = false));
+export const runRepeatedly = <T>(options: Param, scheduler = async) => {
+  return (source: Observable<T>) => {
+    const s1 = source.pipe(minInterval(options.minInterval || 0, scheduler));
+    const s2 =
+      options.executionCount !== undefined
+        ? s1.pipe(repeatWithCount(options.executionCount))
+        : s1.pipe(repeatWithinTime(options.minExecutionTime, scheduler));
 
-    return source.pipe(
-      minInterval(minimumInterval, scheduler),
-      map((res) => ({ ...res, totalCount: ++totalExecutionCount })),
-      tap({ complete: conditionRuntimeOver }),
-      repeat(executionCount),
-      takeUntil(runtimeOver),
-    );
+    return s2.pipe(map((v) => ({ executionResult: v.value, totalExecutionCount: v.count })));
   };
 };
 
-export const runTaskRepeatedly = (
-  fn: () => ObservableInput<unknown>,
-  { minimumInterval = 0, executionCount = Infinity, minimumTotalRunTime = Infinity },
-) => {
-  return defer(fn).pipe(runRepeatedly(minimumInterval, executionCount, minimumTotalRunTime)).toPromise();
+export const runTaskRepeatedly = <T>(fn: () => ObservableInput<T>, options: Param, scheduler = async) => {
+  return defer(fn).pipe(runRepeatedly<T>(options, scheduler)).toPromise();
 };

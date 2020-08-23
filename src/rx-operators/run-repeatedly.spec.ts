@@ -1,5 +1,5 @@
 import { TestScheduler } from 'rxjs/testing';
-import { runRepeatedly } from './run-repeatedly';
+import { runRepeatedly, runTaskRepeatedly } from './run-repeatedly';
 
 describe('runRepeatedly', () => {
   let scheduler: TestScheduler;
@@ -10,50 +10,41 @@ describe('runRepeatedly', () => {
     });
   });
 
-  test('should run once if minimum runtime is under execution time', () => {
+  test('should run for specific count with minInterval', () => {
     scheduler.run((helpers) => {
       const { cold, expectObservable } = helpers;
 
       const stream = cold('10ms (a|)');
-      const expected = '10ms (b|)';
-      const expectedValue = { b: { data: 'a', executionTime: 10, waitTime: 0, totalCount: 1 } };
+      const expected = '30ms b 29ms c 29ms (d|)';
 
-      expectObservable(stream.pipe(runRepeatedly(0, 3, 0, scheduler))).toBe(expected, expectedValue);
+      expectObservable(stream.pipe(runRepeatedly({ minInterval: 30, executionCount: 3 }, scheduler))).toBe(expected, {
+        b: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 1 },
+        c: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 2 },
+        d: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 3 },
+      });
     });
   });
 
-  test('should noop if execution count is 0', () => {
+  test('should run for specific time with minInterval', () => {
     scheduler.run((helpers) => {
       const { cold, expectObservable } = helpers;
 
       const stream = cold('10ms (a|)');
-      const expected = '|';
+      const expected = '30ms b 29ms c 29ms (d|)';
 
-      expectObservable(stream.pipe(runRepeatedly(0, 0, 0, scheduler))).toBe(expected);
+      expectObservable(stream.pipe(runRepeatedly({ minInterval: 30, minExecutionTime: 80 }, scheduler))).toBe(expected, {
+        b: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 1 },
+        c: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 2 },
+        d: { executionResult: { value: 'a', executionTime: 10, waitTime: 20 }, totalExecutionCount: 3 },
+      });
     });
   });
 
-  test('should complete by runtime over', () => {
-    scheduler.run((helpers) => {
-      const { cold, expectObservable } = helpers;
+  test('runTaskRepeatedly', async () => {
+    const wait = (time: number) => new Promise((resolve) => setTimeout(() => resolve(), time));
+    const fn = jest.fn(() => wait(10));
 
-      const stream = cold('100ms (a|)');
-      const expected = '100ms b 99ms b 99ms (b|)';
-      const expectedValue = { b: { data: 'a', executionTime: 100, waitTime: 0 } };
-
-      expectObservable(stream.pipe(runRepeatedly(100, 10, 300, scheduler))).toBe(expected, expectedValue);
-    });
-  });
-
-  test('should complete by retry count', () => {
-    scheduler.run((helpers) => {
-      const { cold, expectObservable } = helpers;
-
-      const stream = cold('100ms (a|)');
-      const expected = '100ms b 99ms (b|)';
-      const expectedValue = { b: { data: 'a', executionTime: 100, waitTime: 0 } };
-
-      expectObservable(stream.pipe(runRepeatedly(100, 2, 300, scheduler))).toBe(expected, expectedValue);
-    });
+    await runTaskRepeatedly(() => fn(), { minInterval: 30, minExecutionTime: 50 });
+    expect(fn).toBeCalledTimes(2);
   });
 });

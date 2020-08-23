@@ -19,7 +19,7 @@ describe('minInterval', () => {
 
       expectObservable(stream.pipe(minInterval(1000, scheduler))).toBe(expected, {
         a: {
-          data: 'a',
+          value: 'a',
           executionTime: 400,
           waitTime: 600,
         },
@@ -36,7 +36,7 @@ describe('minInterval', () => {
 
       expectObservable(stream.pipe(minInterval(200, scheduler))).toBe(expected, {
         a: {
-          data: 'a',
+          value: 'a',
           executionTime: 400,
           waitTime: 0,
         },
