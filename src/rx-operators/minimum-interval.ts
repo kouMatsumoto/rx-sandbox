@@ -1,7 +1,7 @@
 import { async, Observable, timer } from 'rxjs';
 import { delayWhen, map, timeInterval } from 'rxjs/operators';
 
-export const minInterval = (minimumProcessTime: number, scheduler = async) => {
+export const minimumInterval = (minimumProcessTime: number, scheduler = async) => {
   return (source: Observable<any>) => {
     let waitTime: number;
 
@@ -15,7 +15,7 @@ export const minInterval = (minimumProcessTime: number, scheduler = async) => {
       }),
       map((time) => ({
         data: time.value,
-        executionTime: time.interval,
+        processTime: time.interval,
         waitTime,
       })),
     );
