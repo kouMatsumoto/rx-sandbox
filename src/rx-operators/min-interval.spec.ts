@@ -43,4 +43,15 @@ describe('minInterval', () => {
       });
     });
   });
+
+  test('should not wait if errored', () => {
+    scheduler.run((helpers) => {
+      const { cold, expectObservable } = helpers;
+
+      const stream = cold('50ms a 19ms #');
+      const expected = '70ms #';
+
+      expectObservable(stream.pipe(minInterval(100, scheduler))).toBe(expected);
+    });
+  });
 });
